@@ -1,35 +1,27 @@
 {
   "miniprogramRoot": "miniprogram/",
-  "cloudfunctionRoot": "cloudfunctions/",
+  "cloudfunctionRoot": "",
   "setting": {
     "urlCheck": false,
     "es6": true,
     "enhance": true,
     "postcss": true,
-    "preloadBackgroundData": false,
     "minified": true,
-    "newFeature": true,
     "coverView": true,
+    "nodeModules": false,
     "autoAudits": false,
     "showShadowRootInWxmlPanel": true,
     "scopeDataCheck": false,
-    "checkInvalidKey": true,
-    "checkSiteMap": true,
-    "uploadWithSourceMap": true,
-    "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
-      "outputPath": ""
-    },
-    "useCompilerModule": false,
-    "userConfirmedUseCompilerModuleSwitch": false
+    "uglifyFileName": true,
+    "uploadWithSourceMap": true
   },
   "compileType": "miniprogram",
   "libVersion": "2.19.4",
   "appid": "your-appid-here",
-  "projectname": "clothing-match-app",
+  "projectname": "clothing-match-free",
   "debugOptions": {
-    "hidedInDevtools": []
+    "hidedInDevtools": [],
+    "checkSiteMap": false
   },
   "scripts": {},
   "staticServerOptions": {
@@ -37,7 +29,6 @@
     "servePath": ""
   },
   "isGameTourist": false,
-  "cloudfunctionTemplateRoot": "cloudfunctionTemplate",
   "condition": {
     "search": {
       "list": []

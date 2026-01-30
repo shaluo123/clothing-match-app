@@ -1,3 +1,7 @@
+// 免费部署模式的应用入口
+const config = require('./config/api-free.js');
+const freeApiService = require('./services/api-free.js');
+
 App({
   globalData: {
     userInfo: null,
@@ -36,11 +40,13 @@ App({
       }
     },
     currentSeason: 'spring',
-    autoSaveTimer: null
+    autoSaveTimer: null,
+    apiService: freeApiService,
+    serviceStatus: null
   },
 
   onLaunch: function () {
-    console.log('衣搭助手启动')
+    console.log('衣搭助手启动 - 免费部署模式')
     
     // 初始化服务
     this.initServices()
@@ -53,10 +59,18 @@ App({
     
     // 检查服务状态
     this.checkServiceHealth()
+    
+    // 重置月度使用量
+    config.resetMonthlyUsage()
+    
+    // 初始化本地存储
+    this.initLocalStorage()
   },
 
   onShow: function () {
     console.log('应用显示')
+    this.setCurrentSeason()
+    this.checkServiceHealth()
   },
 
   onHide: function () {
@@ -68,7 +82,57 @@ App({
     }
   },
 
-  // 根据月份设置当前季节
+  // 初始化服务
+  initServices: function () {
+    console.log(`部署模式: ${config.DEPLOY_MODE} - 免费服务`)
+    console.log('服务初始化完成')
+  },
+
+  // 初始化本地存储
+  initLocalStorage: function () {
+    // 确保必要的存储键存在
+    const requiredKeys = [
+      'local_clothing',
+      'local_outfits', 
+      'local_tags',
+      'user_preferences',
+      'usage_stats'
+    ]
+    
+    requiredKeys.forEach(key => {
+      if (!wx.getStorageSync(key)) {
+        wx.setStorageSync(key, JSON.stringify([]))
+      }
+    })
+  },
+
+  // 检查服务健康状态
+  checkServiceHealth: async function () {
+    try {
+      const status = await this.globalData.apiService.testConnection()
+      this.globalData.serviceStatus = {
+        connected: status,
+        lastCheck: new Date(),
+        mode: config.DEPLOY_MODE
+      }
+      
+      if (!status) {
+        console.warn('API服务连接失败，使用离线模式')
+      } else {
+        console.log('API服务连接正常')
+      }
+    } catch (error) {
+      console.error('服务检查失败:', error)
+      this.globalData.serviceStatus = {
+        connected: false,
+        lastCheck: new Date(),
+        error: error.message,
+        mode: config.DEPLOY_MODE
+      }
+    }
+  },
+
+  // 设置当前季节
   setCurrentSeason: function () {
     const month = new Date().getMonth() + 1
     let season = 'spring'
@@ -108,11 +172,104 @@ App({
           wx.getUserInfo({
             success: res => {
               this.globalData.userInfo = res.userInfo
+              wx.setStorageSync('userInfo', res.userInfo)
             }
           })
+        } else {
+          // 尝试从本地获取用户信息
+          const localUserInfo = wx.getStorageSync('userInfo')
+          if (localUserInfo) {
+            this.globalData.userInfo = localUserInfo
+          }
         }
       }
     })
+  },
+
+  // 统一的API调用方法
+  async callApi(method, ...args) {
+    try {
+      const result = await this.globalData.apiService[method](...args)
+      return result
+    } catch (error) {
+      console.error(`API调用失败 [${method}]:`, error)
+      
+      // 显示错误提示
+      this.showError('操作失败，请检查网络连接')
+      
+      // 如果是网络错误，尝试使用本地数据
+      if (error.message.includes('network') || error.message.includes('timeout')) {
+        return this.getOfflineData(method, ...args)
+      }
+      
+      throw error
+    }
+  },
+
+  // 获取离线数据
+  getOfflineData(method, ...args) {
+    console.log(`使用离线数据 [${method}]`)
+    
+    switch (method) {
+      case 'getClothingList':
+        return this.getOfflineClothingList(...args)
+      case 'getOutfitList':
+        return this.getOfflineOutfitList(...args)
+      case 'getRecommendations':
+        return this.globalData.apiService.getDefaultRecommendations(...args)
+      case 'getUsageStats':
+        return this.globalData.apiService.getLocalStats()
+      default:
+        return { success: false, error: '离线模式不支持此操作' }
+    }
+  },
+
+  // 获取离线衣物列表
+  getOfflineClothingList(params = {}) {
+    const clothing = JSON.parse(wx.getStorageSync('local_clothing') || '[]')
+    const { page = 1, limit = 20, category } = params
+    
+    let filteredClothing = clothing
+    if (category) {
+      filteredClothing = clothing.filter(item => item.category === category)
+    }
+    
+    const start = (page - 1) * limit
+    const end = start + limit
+    const paginatedClothing = filteredClothing.slice(start, end)
+    
+    return {
+      success: true,
+      data: paginatedClothing,
+      total: filteredClothing.length,
+      page,
+      limit,
+      offline: true
+    }
+  },
+
+  // 获取离线搭配列表
+  getOfflineOutfitList(params = {}) {
+    const outfits = JSON.parse(wx.getStorageSync('local_outfits') || '[]')
+    const { page = 1, limit = 20, season } = params
+    
+    let filteredOutfits = outfits
+    if (season) {
+      filteredOutfits = outfits.filter(item => item.season === season)
+    }
+    
+    const start = (page - 1) * limit
+    const end = start + limit
+    const paginatedOutfits = filteredOutfits.slice(start, end)
+    
+    return {
+      success: true,
+      data: paginatedOutfits,
+      total: filteredOutfits.length,
+      page,
+      limit,
+      offline: true
+    }
   },
 
   // 显示加载提示
@@ -144,56 +301,5 @@ App({
       icon: 'error',
       duration: 2000
     })
-  },
-
-  // 初始化服务
-  initServices: function () {
-    const config = require('./miniprogram/config/api.js')
-    const hybridService = require('./miniprogram/services/hybrid.js')
-    
-    // 根据配置初始化不同的服务
-    if (config.DEPLOY_MODE === 'cloud') {
-      // 云开发模式
-      if (wx.cloud) {
-        wx.cloud.init({
-          env: config.CLOUD_CONFIG.env || 'your-env-id',
-          traceUser: true,
-        })
-        console.log('云开发初始化成功')
-      }
-    } else {
-      console.log(`使用自建API模式: ${config.DEPLOY_MODE}`)
-    }
-    
-    // 检查服务健康状态
-    this.checkServiceHealth()
-  },
-
-  // 检查服务健康状态
-  checkServiceHealth: async function () {
-    try {
-      const hybridService = require('./miniprogram/services/hybrid.js')
-      const status = await hybridService.checkServices()
-      
-      if (!status.healthy) {
-        console.warn('服务检查异常:', status.services)
-        
-        // 如果自建服务不可用，自动切换到云开发
-        if (config.DEPLOY_MODE !== 'cloud') {
-          console.log('自动切换到云开发模式')
-          hybridService.switchMode('cloud')
-        }
-      } else {
-        console.log('所有服务运行正常')
-      }
-    } catch (error) {
-      console.error('服务检查失败:', error)
-    }
-  },
-
-  // 获取推荐配置
-  getRecommendedConfig: function () {
-    const hybridService = require('./miniprogram/services/hybrid.js')
-    return hybridService.getRecommendedConfig()
   }
 })

@@ -1,9 +1,9 @@
+// 免费部署模式的衣橱页面
 const app = getApp()
 
 Page({
   data: {
     currentSeason: '',
-    selectedCategory: '',
     filteredClothing: [],
     selectedItems: [],
     categoryStats: {
@@ -23,7 +23,8 @@ Page({
       name: '',
       category: '',
       tags: []
-    }
+    },
+    serviceStatus: null
   },
 
   onLoad: function (options) {
@@ -48,22 +49,30 @@ Page({
 
   // 设置当前季节
   setCurrentSeason: function () {
+    const currentSeason = app.globalData.currentSeason
     this.setData({
-      currentSeason: app.globalData.currentSeason
+      currentSeason: currentSeason
     })
   },
 
   // 加载衣物数据
   loadClothingData: function () {
-    app.showLoading('加载中...')
-    
-    wx.cloud.database().collection('clothing')
-      .orderBy('createTime', 'desc')
-      .get()
-      .then(res => {
-        app.hideLoading()
-        const clothing = res.data.map(item => ({
-          id: item._id,
+    wx.showLoading({
+      title: '加载中...',
+      mask: true
+    })
+
+    // 使用免费API服务获取衣物列表
+    app.callApi('getClothingList', {
+      page: 1,
+      limit: 50
+    })
+    .then(result => {
+      wx.hideLoading()
+      
+      if (result.success) {
+        const clothing = result.data.map(item => ({
+          id: item._id || item.id,
           name: item.name,
           image: item.image,
           category: item.category,
@@ -78,13 +87,16 @@ Page({
         })
 
         this.updateCategoryStats()
-      })
-      .catch(err => {
-        app.hideLoading()
-        console.error('加载衣物数据失败:', err)
+      } else {
         // 使用模拟数据
         this.loadMockData()
-      })
+      }
+    })
+    .catch(error => {
+      wx.hideLoading()
+      console.error('加载衣物数据失败:', error)
+      this.loadMockData()
+    })
   },
 
   // 加载模拟数据
@@ -173,6 +185,9 @@ Page({
     
     let filteredClothing = allClothing
     if (category !== '') {
+      const categoryMap = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'accessory']
+      const index = categoryMap.indexOf(category)
+      const categoryName = this.data.categories[index]
       filteredClothing = allClothing.filter(item => item.category === category)
     }
 
@@ -221,8 +236,9 @@ Page({
   // 编辑衣物
   editClothing: function (e) {
     const id = e.currentTarget.dataset.id
-    wx.navigateTo({
-      url: `/pages/clothing-edit/clothing-edit?id=${id}`
+    wx.showToast({
+      title: '编辑功能开发中',
+      icon: 'none'
     })
   },
 
@@ -243,19 +259,26 @@ Page({
 
   // 执行删除
   performDelete: function (id) {
-    app.showLoading('删除中...')
-    
-    wx.cloud.database().collection('clothing')
-      .doc(id)
-      .remove()
-      .then(res => {
-        app.hideLoading()
-        app.showSuccess('删除成功')
-        this.loadClothingData()
+    wx.showLoading({
+      title: '删除中...',
+      mask: true
+    })
+
+    // 使用免费API服务删除衣物
+    app.callApi('deleteClothing', id)
+      .then(result => {
+        wx.hideLoading()
+        
+        if (result.success) {
+          app.showSuccess('删除成功')
+          this.loadClothingData()
+        } else {
+          app.showError('删除失败')
+        }
       })
-      .catch(err => {
-        app.hideLoading()
-        console.error('删除失败:', err)
+      .catch(error => {
+        wx.hideLoading()
+        console.error('删除失败:', error)
         app.showError('删除失败，请重试')
       })
   },
@@ -324,34 +347,38 @@ Page({
 
   // 处理选中的图片
   processSelectedImage: function (tempFilePath) {
-    app.showLoading('处理图片中...')
-    
-    // 调用AI抠图服务（支持多种部署模式）
-    const hybridService = require('../../services/hybrid.js')
-    hybridService.removeBackground(tempFilePath)
-    .then(res => {
-      app.hideLoading()
-      if (res.result.success) {
-        this.setData({
-          'tempClothing.image': res.result.processedImage
-        })
-        app.showSuccess('图片处理成功')
-      } else {
-        // 如果抠图失败，使用原图
+    wx.showLoading({
+      title: '处理图片中...',
+      mask: true
+    })
+
+    // 使用免费API服务进行AI抠图
+    app.callApi('removeBackground', tempFilePath)
+      .then(result => {
+        wx.hideLoading()
+        
+        if (result.success) {
+          this.setData({
+            'tempClothing.image': result.processedImage
+          })
+          app.showSuccess('图片处理成功')
+        } else {
+          // 如果抠图失败，使用原图
+          this.setData({
+            'tempClothing.image': tempFilePath
+          })
+          app.showSuccess('使用原图')
+        }
+      })
+      .catch(error => {
+        wx.hideLoading()
+        console.error('图片处理失败:', error)
+        
+        // 使用原图
         this.setData({
           'tempClothing.image': tempFilePath
         })
-        app.showError('抠图失败，使用原图')
-      }
-    })
-    .catch(err => {
-      app.hideLoading()
-      console.error('图片处理失败:', err)
-      // 使用原图
-      this.setData({
-        'tempClothing.image': tempFilePath
       })
-    })
   },
 
   // 输入名称
@@ -370,17 +397,6 @@ Page({
       categoryIndex: index,
       'tempClothing.category': categoryMap[index]
     })
-  },
-
-  // 添加标签
-  addTag: function (e) {
-    const tag = e.detail.value.trim()
-    if (tag && !this.data.tempClothing.tags.includes(tag)) {
-      const tags = [...this.data.tempClothing.tags, tag]
-      this.setData({
-        'tempClothing.tags': tags
-      })
-    }
   },
 
   // 保存衣物
@@ -402,58 +418,54 @@ Page({
       return
     }
 
-    app.showLoading('保存中...')
-    
-    // 上传图片到云存储
-    const cloudPath = `clothing/${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`
-    
-    wx.cloud.uploadFile({
-      cloudPath: cloudPath,
-      filePath: clothing.image
+    // 先上传图片
+    wx.showLoading({
+      title: '保存中...',
+      mask: true
     })
-    .then(res => {
-      // 保存数据（支持多种部署模式）
-    const hybridService = require('../../services/hybrid.js')
-    return hybridService.saveClothing({
-      name: clothing.name,
-      image: res.fileID,
-      category: clothing.category,
-      tags: clothing.tags,
-      createTime: new Date()
-    })
-    })
-    .then(res => {
-      app.hideLoading()
-      app.showSuccess('添加成功')
-      this.hideAddModal()
-      this.loadClothingData()
-    })
-    .catch(err => {
-      app.hideLoading()
-      console.error('保存失败:', err)
-      app.showError('保存失败，请重试')
-    })
+
+    app.callApi('uploadFile', clothing.image, { type: 'clothing-image' })
+      .then(uploadResult => {
+        if (uploadResult.success) {
+          // 然后保存衣物信息
+          const clothingData = {
+            name: clothing.name.trim(),
+            image: uploadResult.url,
+            category: clothing.category,
+            tags: clothing.tags
+          }
+
+          return app.callApi('saveClothing', clothingData)
+        } else {
+          throw new Error(uploadResult.error || '上传失败')
+        }
+      })
+      .then(result => {
+        wx.hideLoading()
+        
+        if (result.success) {
+          app.showSuccess('添加成功')
+          this.hideAddModal()
+          this.loadClothingData()
+        } else {
+          app.showError('保存失败')
+        }
+      })
+      .catch(error => {
+        wx.hideLoading()
+        console.error('保存失败:', error)
+        app.showError('保存失败，请重试')
+      })
   },
 
-  // 加载更多衣物
-  loadMoreClothing: function () {
-    // 实现分页加载逻辑
-    console.log('加载更多衣物')
-  },
-
-  // 显示筛选弹窗
-  showFilterModal: function () {
-    wx.showToast({
-      title: '筛选功能开发中',
-      icon: 'none'
-    })
-  },
-
-  // 显示排序弹窗
-  showSortModal: function () {
-    wx.showToast({
-      title: '排序功能开发中',
-      icon: 'none'
-    })
+  // 添加标签
+  addTag: function (e) {
+    const tag = e.detail.value.trim()
+    if (tag && !this.data.tempClothing.tags.includes(tag)) {
+      const tags = [...this.data.tempClothing.tags, tag]
+      this.setData({
+        'tempClothing.tags': tags
+      })
+    }
   }
 })

@@ -1,0 +1,12 @@
+<view class="page-container">
+  <view class="service-status {{serviceStatus && serviceStatus.connected ? 'connected' : 'disconnected'}}" wx:if="{{serviceStatus}}">
+    <text class="status-icon">{{serviceStatus && serviceStatus.connected ? '🟢' : '🔴'}}</text>
+    <text class="status-text">{{serviceStatus && serviceStatus.connected ? '在线模式' : '离线模式'}}</text>
+  </view>
+
+  <view class="empty-state">
+    <image src="/images/under-development.png" mode="aspectFit" />
+    <text class="empty-text">标签管理开发中</text>
+    <text class="empty-desc">免费版本中，此功能将逐步开放</text>
+  </view>
+</view>

@@ -1,10 +1,10 @@
 {
   "pages": [
-    "pages/home/home",
-    "pages/closet/closet",
-    "pages/outfits/outfits",
-    "pages/tags/tags",
-    "pages/profile/profile"
+    "pages/home/home-free",
+    "pages/closet/closet-free",
+    "pages/outfits/outfits-free", 
+    "pages/tags/tags-free",
+    "pages/profile/profile-free"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -20,31 +20,31 @@
     "borderStyle": "white",
     "list": [
       {
-        "pagePath": "pages/home/home",
+        "pagePath": "pages/home/home-free",
         "text": "首页",
         "iconPath": "images/home.png",
         "selectedIconPath": "images/home-active.png"
       },
       {
-        "pagePath": "pages/closet/closet",
+        "pagePath": "pages/closet/closet-free", 
         "text": "衣橱",
         "iconPath": "images/closet.png",
         "selectedIconPath": "images/closet-active.png"
       },
       {
-        "pagePath": "pages/outfits/outfits",
+        "pagePath": "pages/outfits/outfits-free",
         "text": "搭配",
         "iconPath": "images/outfit.png",
         "selectedIconPath": "images/outfit-active.png"
       },
       {
-        "pagePath": "pages/tags/tags",
+        "pagePath": "pages/tags/tags-free",
         "text": "标签",
         "iconPath": "images/tag.png",
         "selectedIconPath": "images/tag-active.png"
       },
       {
-        "pagePath": "pages/profile/profile",
+        "pagePath": "pages/profile/profile-free",
         "text": "我的",
         "iconPath": "images/profile.png",
         "selectedIconPath": "images/profile-active.png"
