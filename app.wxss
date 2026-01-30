@@ -1,0 +1,271 @@
+/* 全局样式 */
+page {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background-color: #FFF5F7;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* 季节主题基础样式 */
+.theme-spring {
+  --primary-color: #FFB6C1;
+  --secondary-color: #FFC0CB;
+  --background-color: #FFF5F7;
+  --accent-color: #FF69B4;
+}
+
+.theme-summer {
+  --primary-color: #98FB98;
+  --secondary-color: #90EE90;
+  --background-color: #F0FFF8;
+  --accent-color: #32CD32;
+}
+
+.theme-autumn {
+  --primary-color: #FFD700;
+  --secondary-color: #F0E68C;
+  --background-color: #FFFACD;
+  --accent-color: #FF8C00;
+}
+
+.theme-winter {
+  --primary-color: #F0F8FF;
+  --secondary-color: #FFFFFF;
+  --background-color: #F5F5F5;
+  --accent-color: #4682B4;
+}
+
+/* 通用布局 */
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: var(--background-color, #FFF5F7);
+}
+
+.page-container {
+  padding: 30rpx;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--background-color, #FFF5F7) 0%, var(--secondary-color, #FFC0CB) 100%);
+}
+
+/* 卡片样式 */
+.card {
+  background: white;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2rpx);
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.15);
+}
+
+/* 按钮样式 */
+.btn {
+  border-radius: 50rpx;
+  padding: 20rpx 40rpx;
+  font-size: 32rpx;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color, #FFB6C1), var(--secondary-color, #FFC0CB));
+  color: white;
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--primary-color, #FFB6C1);
+  border: 2rpx solid var(--primary-color, #FFB6C1);
+}
+
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+/* 文本样式 */
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 15rpx;
+}
+
+.text-primary {
+  color: var(--primary-color, #FFB6C1);
+}
+
+.text-secondary {
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 布局辅助类 */
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  justify-content: space-between;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* 间距 */
+.mt-10 { margin-top: 10rpx; }
+.mt-20 { margin-top: 20rpx; }
+.mt-30 { margin-top: 30rpx; }
+.mb-10 { margin-bottom: 10rpx; }
+.mb-20 { margin-bottom: 20rpx; }
+.mb-30 { margin-bottom: 30rpx; }
+.ml-10 { margin-left: 10rpx; }
+.mr-10 { margin-right: 10rpx; }
+.p-10 { padding: 10rpx; }
+.p-20 { padding: 20rpx; }
+.p-30 { padding: 30rpx; }
+
+/* 图片样式 */
+.image {
+  border-radius: 15rpx;
+  overflow: hidden;
+}
+
+.image-small {
+  width: 120rpx;
+  height: 120rpx;
+}
+
+.image-medium {
+  width: 200rpx;
+  height: 200rpx;
+}
+
+.image-large {
+  width: 100%;
+  height: 400rpx;
+}
+
+/* 标签样式 */
+.tag {
+  background: linear-gradient(135deg, var(--primary-color, #FFB6C1), var(--secondary-color, #FFC0CB));
+  color: white;
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  margin: 5rpx;
+  display: inline-block;
+}
+
+.tag-outline {
+  background: transparent;
+  color: var(--primary-color, #FFB6C1);
+  border: 1rpx solid var(--primary-color, #FFB6C1);
+}
+
+/* 输入框样式 */
+.input {
+  border: 2rpx solid #e0e0e0;
+  border-radius: 15rpx;
+  padding: 20rpx;
+  font-size: 32rpx;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus {
+  border-color: var(--primary-color, #FFB6C1);
+}
+
+/* 加载动画 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  color: var(--primary-color, #FFB6C1);
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80rpx 40rpx;
+  color: #999;
+}
+
+.empty-state image {
+  width: 200rpx;
+  height: 200rpx;
+  margin-bottom: 30rpx;
+  opacity: 0.6;
+}
+
+/* 动画效果 */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .container {
+    padding: 15rpx;
+  }
+  
+  .card {
+    padding: 20rpx;
+    margin-bottom: 15rpx;
+  }
+}

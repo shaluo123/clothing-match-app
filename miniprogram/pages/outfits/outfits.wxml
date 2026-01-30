@@ -1,0 +1,7 @@
+<view class="page-container">
+  <view class="empty-state">
+    <image src="/images/under-development.png" mode="aspectFit" />
+    <text class="empty-text">搭配页面开发中</text>
+    <text class="empty-desc">敬请期待更多精彩功能</text>
+  </view>
+</view>

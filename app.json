@@ -1,0 +1,69 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/closet/closet",
+    "pages/outfits/outfits",
+    "pages/tags/tags",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFB6C1",
+    "navigationBarTitleText": "衣搭助手",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFF5F7"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FFB6C1",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png"
+      },
+      {
+        "pagePath": "pages/closet/closet",
+        "text": "衣橱",
+        "iconPath": "images/closet.png",
+        "selectedIconPath": "images/closet-active.png"
+      },
+      {
+        "pagePath": "pages/outfits/outfits",
+        "text": "搭配",
+        "iconPath": "images/outfit.png",
+        "selectedIconPath": "images/outfit-active.png"
+      },
+      {
+        "pagePath": "pages/tags/tags",
+        "text": "标签",
+        "iconPath": "images/tag.png",
+        "selectedIconPath": "images/tag-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile-active.png"
+      }
+    ]
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "需要使用相机拍摄衣物照片"
+    },
+    "scope.album": {
+      "desc": "需要访问相册选择衣物照片"
+    }
+  },
+  "requiredBackgroundModes": ["audio"],
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 10000
+  },
+  "debug": false,
+  "sitemapLocation": "sitemap.json"
+}

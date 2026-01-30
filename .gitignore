@@ -1,0 +1,36 @@
+# 忽略文件
+# 微信开发者工具生成的文件
+project.private.config.json
+node_modules/
+miniprogram_npm/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+npm-debug.log*
+
+# 临时文件
+.tmp/
+temp/
+*.tmp
+
+# 云函数依赖
+cloudfunctions/**/node_modules/
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 环境配置
+.env
+.env.local
+.env.production
+
+# 构建产物
+dist/
+build/

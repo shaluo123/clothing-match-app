@@ -1,0 +1,150 @@
+<view class="page-container theme-{{currentSeason}}">
+  <!-- 顶部工具栏 -->
+  <view class="toolbar">
+    <view class="toolbar-left">
+      <text class="page-title">我的衣橱</text>
+    </view>
+    <view class="toolbar-right">
+      <button class="btn-icon" bindtap="showFilterModal">
+        <text class="icon">🔍</text>
+      </button>
+      <button class="btn-icon" bindtap="showSortModal">
+        <text class="icon">↕️</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view class="category-scroll" scroll-x="true">
+    <view class="category-item {{selectedCategory === '' ? 'active' : ''}}" bindtap="selectCategory" data-category="">
+      <text>全部</text>
+      <text class="count">{{categoryStats.all}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'top' ? 'active' : ''}}" bindtap="selectCategory" data-category="top">
+      <text>上衣</text>
+      <text class="count">{{categoryStats.top}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'bottom' ? 'active' : ''}}" bindtap="selectCategory" data-category="bottom">
+      <text>下装</text>
+      <text class="count">{{categoryStats.bottom}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'dress' ? 'active' : ''}}" bindtap="selectCategory" data-category="dress">
+      <text>裙子</text>
+      <text class="count">{{categoryStats.dress}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'outerwear' ? 'active' : ''}}" bindtap="selectCategory" data-category="outerwear">
+      <text>外套</text>
+      <text class="count">{{categoryStats.outerwear}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'shoes' ? 'active' : ''}}" bindtap="selectCategory" data-category="shoes">
+      <text>鞋子</text>
+      <text class="count">{{categoryStats.shoes}}</text>
+    </view>
+    <view class="category-item {{selectedCategory === 'accessory' ? 'active' : ''}}" bindtap="selectCategory" data-category="accessory">
+      <text>配饰</text>
+      <text class="count">{{categoryStats.accessory}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 主要内容区域 -->
+  <view class="main-content">
+    <!-- 衣物列表 -->
+    <scroll-view class="clothing-list" scroll-y="true" bindscrolltolower="loadMoreClothing">
+      <view class="clothing-grid">
+        <view class="clothing-item" wx:for="{{filteredClothing}}" wx:key="id" bindtap="selectClothing" data-item="{{item}}">
+          <view class="clothing-image-container">
+            <image class="clothing-image" src="{{item.image}}" mode="aspectFill" />
+            <view class="clothing-overlay">
+              <button class="btn-overlay btn-select" bindtap="toggleSelect" data-id="{{item.id}}" catchtap="true">
+                <text class="icon">{{item.selected ? '✓' : ''}}</text>
+              </button>
+              <button class="btn-overlay btn-edit" bindtap="editClothing" data-id="{{item.id}}" catchtap="true">
+                <text class="icon">✏️</text>
+              </button>
+              <button class="btn-overlay btn-delete" bindtap="deleteClothing" data-id="{{item.id}}" catchtap="true">
+                <text class="icon">🗑️</text>
+              </button>
+            </view>
+          </view>
+          <view class="clothing-info">
+            <text class="clothing-name">{{item.name}}</text>
+            <view class="clothing-tags">
+              <text class="tag-small" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-state" wx:if="{{filteredClothing.length === 0}}">
+        <image src="/images/empty-closet.png" mode="aspectFit" />
+        <text class="empty-text">衣橱还是空的</text>
+        <button class="btn btn-primary" bindtap="showAddModal">添加第一件衣物</button>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar" wx:if="{{selectedItems.length > 0}}">
+    <text class="selected-count">已选择 {{selectedItems.length}} 件</text>
+    <button class="btn btn-primary" bindtap="createOutfit">创建搭配</button>
+  </view>
+
+  <!-- 添加衣物弹窗 -->
+  <modal class="add-modal" wx:if="{{showAddModal}}" bindtap="hideAddModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">添加衣物</text>
+        <button class="btn-close" bindtap="hideAddModal">×</button>
+      </view>
+      
+      <view class="modal-body">
+        <!-- 添加方式选择 -->
+        <view class="add-methods">
+          <button class="method-btn" bindtap="chooseFromAlbum">
+            <text class="method-icon">📷</text>
+            <text>从相册选择</text>
+          </button>
+          <button class="method-btn" bindtap="takePhoto">
+            <text class="method-icon">📸</text>
+            <text>拍照上传</text>
+          </button>
+        </view>
+
+        <!-- 衣物信息表单 -->
+        <view class="clothing-form" wx:if="{{tempClothing.image}}">
+          <image class="preview-image" src="{{tempClothing.image}}" mode="aspectFill" />
+          
+          <view class="form-group">
+            <text class="form-label">衣物名称</text>
+            <input class="form-input" placeholder="请输入衣物名称" bindinput="onNameInput" value="{{tempClothing.name}}" />
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">分类</text>
+            <picker bindchange="onCategoryChange" value="{{categoryIndex}}" range="{{categories}}">
+              <view class="picker">{{categories[categoryIndex]}}</view>
+            </picker>
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">标签</text>
+            <view class="tag-input-area">
+              <view class="selected-tags">
+                <text class="tag-small" wx:for="{{tempClothing.tags}}" wx:key="*this" wx:for-item="tag">
+                  {{tag}} ×
+                </text>
+              </view>
+              <input class="tag-input" placeholder="输入标签后按回车" bindconfirm="addTag" />
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn btn-secondary" bindtap="hideAddModal">取消</button>
+        <button class="btn btn-primary" bindtap="saveClothing" wx:if="{{tempClothing.image}}">保存</button>
+      </view>
+    </view>
+  </modal>
+</view>
