@@ -1,0 +1,121 @@
+<view class="page-container theme-{{currentSeason}}">
+  <!-- 服务状态提示 -->
+  <view class="service-status {{serviceStatus.connected ? 'connected' : 'disconnected'}}" wx:if="{{serviceStatus}}">
+    <text class="status-icon">{{serviceStatus.connected ? '🟢' : '🔴'}}</text>
+    <text class="status-text">{{serviceStatus.connected ? '在线模式' : '离线模式'}}</text>
+    <button class="usage-btn" bindtap="viewUsageInfo" wx:if="{{usageInfo}}">
+      <text class="usage-icon">📊</text>
+    </button>
+  </view>
+
+  <!-- 顶部欢迎区域 -->
+  <view class="welcome-section fade-in">
+    <view class="welcome-header">
+      <text class="season-icon">{{currentTheme.icon}}</text>
+      <view class="welcome-text">
+        <text class="greeting">{{greeting}}</text>
+        <text class="season-text">{{currentTheme.name}}搭配灵感</text>
+      </view>
+    </view>
+    
+    <!-- 搜索框 -->
+    <view class="search-box">
+      <input 
+        class="search-input" 
+        placeholder="搜索衣物或搭配..." 
+        bindinput="onSearch"
+        value="{{searchKeyword}}"
+      />
+      <button class="search-btn" bindtap="performSearch">
+        <text class="icon">🔍</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 快捷功能 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="navigateToCloset">
+      <view class="action-icon">👔</view>
+      <text class="action-text">添加衣物</text>
+    </view>
+    <view class="action-item" bindtap="navigateToOutfit">
+      <view class="action-icon">✨</view>
+      <text class="action-text">创建搭配</text>
+    </view>
+    <view class="action-item" bindtap="getRecommendation">
+      <view class="action-icon">💡</view>
+      <text class="action-text">智能推荐</text>
+    </view>
+    <view class="action-item" bindtap="navigateToTags">
+      <view class="action-icon">🏷️</view>
+      <text class="action-text">管理标签</text>
+    </view>
+  </view>
+
+  <!-- 今日推荐 -->
+  <view class="recommendation-section">
+    <view class="section-header">
+      <text class="section-title">今日推荐</text>
+      <text class="section-more" bindtap="refreshRecommendation">换一批</text>
+    </view>
+    
+    <view class="recommendation-cards">
+      <view class="rec-card scale-in" wx:for="{{recommendations}}" wx:key="id" bindtap="viewRecommendation" data-item="{{item}}">
+        <image class="rec-image" src="{{item.image}}" mode="aspectFill" lazy-load />
+        <view class="rec-info">
+          <text class="rec-title">{{item.title}}</text>
+          <text class="rec-desc">{{item.description}}</text>
+          <view class="rec-tags">
+            <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+          </view>
+        </view>
+        <view class="rec-offline" wx:if="{{item.offline}}">离线</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最近搭配 -->
+  <view class="recent-outfits">
+    <view class="section-header">
+      <text class="section-title">最近搭配</text>
+      <text class="section-more" bindtap="navigateToOutfits">查看全部</text>
+    </view>
+    
+    <scroll-view class="outfit-scroll" scroll-x="true" enable-flex>
+      <view class="outfit-item" wx:for="{{recentOutfits}}" wx:key="id" bindtap="viewOutfit" data-id="{{item.id}}">
+        <image class="outfit-image" src="{{item.thumbnail}}" mode="aspectFill" lazy-load />
+        <text class="outfit-name">{{item.name}}</text>
+        <text class="outfit-time">{{item.timeText}}</text>
+      </view>
+      
+      <view class="outfit-item add-outfit" bindtap="navigateToOutfit">
+        <view class="add-icon">+</view>
+        <text class="add-text">创建新搭配</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats-section">
+    <view class="stat-item">
+      <text class="stat-number">{{stats.clothingCount}}</text>
+      <text class="stat-label">衣物</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">{{stats.outfitCount}}</text>
+      <text class="stat-label">搭配</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-number">{{stats.tagCount}}</text>
+      <text class="stat-label">标签</text>
+    </view>
+  </view>
+
+  <!-- 部署模式切换 -->
+  <view class="mode-switch">
+    <button class="mode-btn" bindtap="switchDeployMode">
+      <text class="mode-icon">⚙️</text>
+      <text class="mode-text">切换模式</text>
+    </button>
+  </view>
+</view>

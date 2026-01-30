@@ -42,20 +42,17 @@ App({
   onLaunch: function () {
     console.log('衣搭助手启动')
     
-    // 初始化云开发
-    if (wx.cloud) {
-      wx.cloud.init({
-        env: 'your-env-id', // 需要替换为您的云环境ID
-        traceUser: true,
-      })
-      console.log('云开发初始化成功')
-    }
-
+    // 初始化服务
+    this.initServices()
+    
     // 设置当前季节
     this.setCurrentSeason()
     
     // 获取用户信息
     this.getUserInfo()
+    
+    // 检查服务状态
+    this.checkServiceHealth()
   },
 
   onShow: function () {
@@ -147,5 +144,56 @@ App({
       icon: 'error',
       duration: 2000
     })
+  },
+
+  // 初始化服务
+  initServices: function () {
+    const config = require('./miniprogram/config/api.js')
+    const hybridService = require('./miniprogram/services/hybrid.js')
+    
+    // 根据配置初始化不同的服务
+    if (config.DEPLOY_MODE === 'cloud') {
+      // 云开发模式
+      if (wx.cloud) {
+        wx.cloud.init({
+          env: config.CLOUD_CONFIG.env || 'your-env-id',
+          traceUser: true,
+        })
+        console.log('云开发初始化成功')
+      }
+    } else {
+      console.log(`使用自建API模式: ${config.DEPLOY_MODE}`)
+    }
+    
+    // 检查服务健康状态
+    this.checkServiceHealth()
+  },
+
+  // 检查服务健康状态
+  checkServiceHealth: async function () {
+    try {
+      const hybridService = require('./miniprogram/services/hybrid.js')
+      const status = await hybridService.checkServices()
+      
+      if (!status.healthy) {
+        console.warn('服务检查异常:', status.services)
+        
+        // 如果自建服务不可用，自动切换到云开发
+        if (config.DEPLOY_MODE !== 'cloud') {
+          console.log('自动切换到云开发模式')
+          hybridService.switchMode('cloud')
+        }
+      } else {
+        console.log('所有服务运行正常')
+      }
+    } catch (error) {
+      console.error('服务检查失败:', error)
+    }
+  },
+
+  // 获取推荐配置
+  getRecommendedConfig: function () {
+    const hybridService = require('./miniprogram/services/hybrid.js')
+    return hybridService.getRecommendedConfig()
   }
 })

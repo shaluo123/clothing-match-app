@@ -1,3 +1,4 @@
+// 免费部署模式的首页
 const app = getApp()
 
 Page({
@@ -12,7 +13,9 @@ Page({
       clothingCount: 0,
       outfitCount: 0,
       tagCount: 0
-    }
+    },
+    serviceStatus: null,
+    usageInfo: null
   },
 
   onLoad: function (options) {
@@ -23,11 +26,13 @@ Page({
     this.setCurrentSeason()
     this.loadRecentData()
     this.refreshRecommendation()
+    this.checkServiceStatus()
   },
 
   onPullDownRefresh: function () {
     this.refreshRecommendation()
     this.loadRecentData()
+    this.checkServiceStatus()
     wx.stopPullDownRefresh()
   },
 
@@ -37,6 +42,7 @@ Page({
     this.setGreeting()
     this.loadRecentData()
     this.refreshRecommendation()
+    this.checkServiceStatus()
   },
 
   // 设置当前季节主题
@@ -72,6 +78,24 @@ Page({
     })
   },
 
+  // 检查服务状态
+  checkServiceStatus: function () {
+    const status = app.getServiceStatus()
+    this.setData({
+      serviceStatus: status,
+      usageInfo: status.usage
+    })
+    
+    // 如果API不可用，显示提示
+    if (!status.connected) {
+      wx.showToast({
+        title: 'API服务不可用，使用离线模式',
+        icon: 'none',
+        duration: 3000
+      })
+    }
+  },
+
   // 搜索输入
   onSearch: function (e) {
     this.setData({
@@ -87,10 +111,22 @@ Page({
       return
     }
 
-    // 跳转到搜索结果页面
-    wx.navigateTo({
-      url: `/pages/search/search?keyword=${encodeURIComponent(keyword)}`
-    })
+    // 使用免费API服务进行搜索
+    app.callApi('search', keyword, 'all')
+      .then(result => {
+        if (result.success) {
+          // 跳转到搜索结果页面
+          wx.navigateTo({
+            url: `/pages/search/search?keyword=${encodeURIComponent(keyword)}&results=${encodeURIComponent(JSON.stringify(result.data))}`
+          })
+        } else {
+          app.showError('搜索失败')
+        }
+      })
+      .catch(error => {
+        console.error('搜索失败:', error)
+        app.showError('搜索失败，请重试')
+      })
   },
 
   // 导航到衣橱页面
@@ -125,34 +161,58 @@ Page({
   getRecommendation: function () {
     app.showLoading('获取推荐中...')
     
-    // 获取智能推荐（支持多种部署模式）
-    const hybridService = require('../../services/hybrid.js')
-    return hybridService.getRecommendations({
+    // 使用免费API服务获取推荐
+    app.callApi('getRecommendations', {
       type: 'smart',
-      season: this.data.currentSeason
+      season: this.data.currentSeason,
+      limit: 5
     })
-    .then(res => {
+    .then(result => {
       app.hideLoading()
-      if (res.result.success) {
+      if (result.success) {
         this.setData({
-          recommendations: res.result.data
+          recommendations: result.data
         })
         app.showSuccess('推荐更新成功')
       } else {
         app.showError('获取推荐失败')
       }
     })
-    .catch(err => {
+    .catch(error => {
       app.hideLoading()
-      console.error('获取推荐失败:', err)
+      console.error('获取推荐失败:', error)
       app.showError('网络错误，请重试')
     })
   },
 
   // 刷新推荐
   refreshRecommendation: function () {
-    // 模拟推荐数据
-    const mockRecommendations = [
+    // 使用免费API服务刷新推荐
+    app.callApi('getRecommendations', {
+      type: 'smart',
+      season: this.data.currentSeason,
+      limit: 3,
+      refresh: true
+    })
+    .then(result => {
+      if (result.success) {
+        this.setData({
+          recommendations: result.data
+        })
+      } else {
+        // 使用默认推荐
+        this.setDefaultRecommendations()
+      }
+    })
+    .catch(error => {
+      console.error('刷新推荐失败:', error)
+      this.setDefaultRecommendations()
+    })
+  },
+
+  // 设置默认推荐
+  setDefaultRecommendations: function () {
+    const defaultRecommendations = [
       {
         id: 1,
         title: '春日清新搭配',
@@ -177,7 +237,7 @@ Page({
     ]
 
     this.setData({
-      recommendations: mockRecommendations
+      recommendations: defaultRecommendations
     })
   },
 
@@ -212,103 +272,95 @@ Page({
 
   // 加载统计数据
   loadStats: function () {
-    // 获取统计数据（支持多种部署模式）
-    const hybridService = require('../../services/hybrid.js')
-    const apiService = require('../../services/api.js')
-    
-    try {
-      if (hybridService.database) {
-        // 使用云开发数据库
-        return await hybridService.database.collection('clothing').count()
-      } else {
-        // 使用自建API
-        const result = await apiService.getClothingList({ limit: 1 })
-        return { total: result.total || 0 }
-      }
-    } catch (error) {
-      throw error
-    }
-      .then(res => {
-        const clothingCount = res.total
-        
-        wx.cloud.database().collection('outfits').count()
-          .then(res => {
-            const outfitCount = res.total
-            
-            wx.cloud.database().collection('tags').count()
-              .then(res => {
-                const tagCount = res.total
-                
-                this.setData({
-                  stats: {
-                    clothingCount: clothingCount,
-                    outfitCount: outfitCount,
-                    tagCount: tagCount
-                  }
-                })
-              })
+    // 使用免费API服务获取统计
+    app.callApi('getUsageStats')
+      .then(result => {
+        if (result.success) {
+          this.setData({
+            stats: {
+              clothingCount: result.data.clothingCount,
+              outfitCount: result.data.outfitCount,
+              tagCount: result.data.tagCount
+            }
           })
+        } else {
+          this.setMockStats()
+        }
       })
-      .catch(err => {
-        console.error('加载统计数据失败:', err)
-        // 使用模拟数据
-        this.setData({
-          stats: {
-            clothingCount: 28,
-            outfitCount: 12,
-            tagCount: 15
-          }
-        })
+      .catch(error => {
+        console.error('加载统计数据失败:', error)
+        this.setMockStats()
       })
+  },
+
+  // 设置模拟统计数据
+  setMockStats: function () {
+    this.setData({
+      stats: {
+        clothingCount: 28,
+        outfitCount: 12,
+        tagCount: 15
+      }
+    })
   },
 
   // 加载最近搭配
   loadRecentOutfits: function () {
-    // 从云数据库获取最近搭配
-    wx.cloud.database().collection('outfits')
-      .orderBy('createTime', 'desc')
-      .limit(5)
-      .get()
-      .then(res => {
-        const outfits = res.data.map(item => ({
+    // 使用免费API服务获取最近搭配
+    app.callApi('getOutfitList', {
+      page: 1,
+      limit: 5,
+      sortBy: 'createTime',
+      sortOrder: 'desc'
+    })
+    .then(result => {
+      if (result.success) {
+        const outfits = result.data.map(item => ({
           id: item._id,
           name: item.name,
-          thumbnail: item.thumbnail || 'https://picsum.photos/200/250?random=' + item._id,
+          thumbnail: item.thumbnail || `https://picsum.photos/200/250?random=${item._id}`,
           timeText: this.formatTime(item.createTime)
         }))
         
         this.setData({
           recentOutfits: outfits
         })
-      })
-      .catch(err => {
-        console.error('加载最近搭配失败:', err)
-        // 使用模拟数据
-        const mockOutfits = [
-          {
-            id: '1',
-            name: '春日清新装',
-            thumbnail: 'https://picsum.photos/200/250?random=10',
-            timeText: '2小时前'
-          },
-          {
-            id: '2',
-            name: '职场精英装',
-            thumbnail: 'https://picsum.photos/200/250?random=11',
-            timeText: '1天前'
-          },
-          {
-            id: '3',
-            name: '周末休闲装',
-            thumbnail: 'https://picsum.photos/200/250?random=12',
-            timeText: '3天前'
-          }
-        ]
-        
-        this.setData({
-          recentOutfits: mockOutfits
-        })
-      })
+      } else {
+        this.setMockOutfits()
+      }
+    })
+    .catch(error => {
+      console.error('加载最近搭配失败:', error)
+      this.setMockOutfits()
+    })
+  },
+
+  // 设置模拟最近搭配
+  setMockOutfits: function () {
+    const mockOutfits = [
+      {
+        id: '1',
+        name: '春日清新装',
+        thumbnail: 'https://picsum.photos/200/250?random=10',
+        timeText: '2小时前'
+      },
+      {
+        id: '2',
+        name: '职场精英装',
+        thumbnail: 'https://picsum.photos/200/250?random=11',
+        timeText: '1天前'
+      },
+      {
+        id: '3',
+        name: '周末休闲装',
+        thumbnail: 'https://picsum.photos/200/250?random=12',
+        timeText: '3天前'
+      }
+    ]
+    
+    this.setData({
+      recentOutfits: mockOutfits
+    })
   },
 
   // 查看搭配详情
@@ -336,5 +388,40 @@ Page({
     } else {
       return time.toLocaleDateString()
     }
+  },
+
+  // 查看使用情况
+  viewUsageInfo: function () {
+    if (!this.data.usageInfo) {
+      app.showError('暂无使用数据')
+      return
+    }
+
+    const { api, storage, bandwidth } = this.data.usageInfo
+    
+    wx.showModal({
+      title: '免费额度使用情况',
+      content: `API调用: ${api.used}/${api.limit}\n存储空间: ${(storage.used/1024/1024).toFixed(1)}MB/${(storage.limit/1024/1024).toFixed(1)}MB\n带宽使用: ${(bandwidth.used/1024/1024).toFixed(1)}MB/${(bandwidth.limit/1024/1024/1024).toFixed(1)}GB`,
+      showCancel: false,
+      confirmText: '知道了'
+    })
+  },
+
+  // 切换部署模式
+  switchDeployMode: function () {
+    wx.showActionSheet({
+      itemList: ['免费模式', '云开发模式', '混合模式'],
+      success: (res) => {
+        const modes = ['self-hosted', 'cloud', 'hybrid']
+        const selectedMode = modes[res.tapIndex]
+        
+        if (selectedMode !== app.config.DEPLOY_MODE) {
+          app.switchDeployMode(selectedMode)
+            .then(status => {
+              this.checkServiceStatus()
+            })
+        }
+      }
+    })
   }
 })

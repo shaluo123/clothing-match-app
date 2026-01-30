@@ -326,13 +326,9 @@ Page({
   processSelectedImage: function (tempFilePath) {
     app.showLoading('处理图片中...')
     
-    // 调用云函数进行AI抠图
-    wx.cloud.callFunction({
-      name: 'removeBackground',
-      data: {
-        imageUrl: tempFilePath
-      }
-    })
+    // 调用AI抠图服务（支持多种部署模式）
+    const hybridService = require('../../services/hybrid.js')
+    hybridService.removeBackground(tempFilePath)
     .then(res => {
       app.hideLoading()
       if (res.result.success) {
@@ -416,16 +412,15 @@ Page({
       filePath: clothing.image
     })
     .then(res => {
-      // 保存到数据库
-      return wx.cloud.database().collection('clothing').add({
-        data: {
-          name: clothing.name,
-          image: res.fileID,
-          category: clothing.category,
-          tags: clothing.tags,
-          createTime: new Date()
-        }
-      })
+      // 保存数据（支持多种部署模式）
+    const hybridService = require('../../services/hybrid.js')
+    return hybridService.saveClothing({
+      name: clothing.name,
+      image: res.fileID,
+      category: clothing.category,
+      tags: clothing.tags,
+      createTime: new Date()
+    })
     })
     .then(res => {
       app.hideLoading()
