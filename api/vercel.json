@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -16,25 +10,19 @@
       "dest": "/index.js"
     }
   ],
-  "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "NODE_ENV": "production"
+  "functions": {
+    "index.js": {
+      "maxDuration": 15,
+      "memory": 512
+    }
   },
-    "functions": {
-      "index.js": {
-        "maxDuration": 15,
-        "memory": 512
-      }
-    },
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://servicewechat.com, https://your-project-id.supabase.co"
+          "value": "*"
         },
         {
           "key": "Access-Control-Allow-Methods",
