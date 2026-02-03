@@ -1,42 +1,37 @@
-// API配置管理 - 专为免费部署优化
+// API配置管理 - Supabase版本
 const config = {
-  // 部署模式：'self-hosted' | 'cloud' | 'hybrid'
-  DEPLOY_MODE: 'self-hosted',
+  // 部署模式：'supabase' | 'vercel-supabase'
+  DEPLOY_MODE: 'supabase',
   
-  // 免费服务配置
-  FREE_SERVICES: {
-    // Vercel免费额度
-    vercel: {
-      baseURL: process.env.VERCEL_URL || 'https://your-app.vercel.app/api',
+  // Supabase免费服务配置
+  SUPABASE_SERVICES: {
+    // Supabase项目配置
+    project: {
+      url: process.env.SUPABASE_URL || 'https://your-project.supabase.co',
+      anonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'ClothingMatch-App/1.0'
+        'apikey': process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        'User-Agent': 'ClothingMatch-App/2.0-Supabase'
       },
       limits: {
-        invocations: 100000,    // 每月10万次免费调用
-        bandwidth: 100 * 1024 * 1024 * 1024, // 100GB免费带宽
-        storage: 'unlimited'       // 无限制存储空间
+        bandwidth: 100 * 1024 * 1024 * 1024,  // 100GB免费带宽
+        storage: 1024 * 1024 * 1024,           // 1GB免费存储
+        users: 50000,                         // 5万免费MAU
+        api: 'unlimited'                       // 无限制API调用
       }
     },
     
-    // MongoDB Atlas免费额度
-    mongodb: {
-      uri: process.env.MONGODB_URI || 'mongodb+srv://user:pass@cluster.mongodb.net/clothing',
-      limits: {
-        storage: 512 * 1024 * 1024,  // 512MB免费存储
-        transfer: 10 * 1024 * 1024 * 1024, // 10GB免费传输
-        connections: 500               // 500个免费连接
-      }
-    },
-    
-    // 自建AI抠图配置
+    // Supabase AI抠图配置
     aiBackgroundRemoval: {
-      model: 'U2-Net',
+      model: 'U2-Net-Supabase',
       limits: {
-        maxImageSize: 5 * 1024 * 1024, // 5MB最大图片
-        processingTime: 10000,           // 10秒超时
-        batchSize: 10                   // 最多10张批量处理
+        maxImageSize: 10 * 1024 * 1024, // 10MB最大图片（Supabase限制）
+        processingTime: 10000,              // 10秒超时
+        batchSize: 10,                     // 最多10张批量处理
+        storageBucket: 'clothing-images'       // Supabase存储桶
       }
     }
   },
@@ -55,18 +50,15 @@ const config = {
   // 获取当前配置
   getCurrentConfig() {
     switch (this.DEPLOY_MODE) {
-      case 'self-hosted':
-        return this.FREE_SERVICES.vercel;
-      case 'cloud':
-        return { ...this.CLOUD_CONFIG, mode: 'cloud' };
-      case 'hybrid':
+      case 'supabase':
+        return this.SUPABASE_SERVICES.project;
+      case 'vercel-supabase':
         return {
-          ...this.FREE_SERVICES.vercel,
-          ...this.CLOUD_CONFIG,
-          mode: 'hybrid'
+          ...this.SUPABASE_SERVICES.project,
+          mode: 'vercel-supabase'
         };
       default:
-        return this.FREE_SERVICES.vercel;
+        return this.SUPABASE_SERVICES.project;
     }
   },
   
@@ -75,18 +67,18 @@ const config = {
     return {
       api: {
         used: this.getMonthlyApiUsage(),
-        limit: this.FREE_SERVICES.vercel.limits.invocations,
-        remaining: this.FREE_SERVICES.vercel.limits.invocations - this.getMonthlyApiUsage()
+        limit: this.SUPABASE_SERVICES.project.limits.users,
+        remaining: this.SUPABASE_SERVICES.project.limits.users - this.getMonthlyApiUsage()
       },
       storage: {
         used: this.getCurrentStorageUsage(),
-        limit: this.FREE_SERVICES.mongodb.limits.storage,
-        remaining: this.FREE_SERVICES.mongodb.limits.storage - this.getCurrentStorageUsage()
+        limit: this.SUPABASE_SERVICES.project.limits.storage,
+        remaining: this.SUPABASE_SERVICES.project.limits.storage - this.getCurrentStorageUsage()
       },
       bandwidth: {
         used: this.getMonthlyBandwidthUsage(),
-        limit: this.FREE_SERVICES.vercel.limits.bandwidth,
-        remaining: this.FREE_SERVICES.vercel.limits.bandwidth - this.getMonthlyBandwidthUsage()
+        limit: this.SUPABASE_SERVICES.project.limits.bandwidth,
+        remaining: this.SUPABASE_SERVICES.project.limits.bandwidth - this.getMonthlyBandwidthUsage()
       }
     };
   },

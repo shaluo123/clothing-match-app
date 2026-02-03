@@ -10,15 +10,22 @@ class FreeApiService {
     this.requestQueue = []; // 请求队列，避免并发过多
   }
 
-  // 统一的HTTP请求方法（带缓存和重试）
+  // 统一的HTTP请求方法（带智能缓存和重试）
   async request(url, options = {}) {
     const cacheKey = `${url}_${JSON.stringify(options)}`;
     
-    // 检查缓存
+    // 智能缓存策略
     if (options.cache !== false && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey);
-      if (Date.now() - cached.timestamp < 300000) { // 5分钟缓存
+      const cacheAge = Date.now() - cached.timestamp;
+      const cacheTTL = this.getCacheTTL(url, options);
+      
+      if (cacheAge < cacheTTL) {
+        console.log(`使用缓存数据: ${url} (剩余${Math.round((cacheTTL - cacheAge)/1000)}s)`);
         return cached.data;
+      } else {
+        // 缓存过期，清除
+        this.cache.delete(cacheKey);
       }
     }
 
@@ -54,12 +61,17 @@ class FreeApiService {
           if (res.statusCode === 200) {
             const data = res.data;
             
-            // 缓存结果
-            if (options.cache !== false) {
+            // 智能缓存结果
+            if (options.cache !== false && data.success) {
               this.cache.set(cacheKey, {
                 data: data,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                url: url,
+                options: { ...options }
               });
+              
+              // 清理过期缓存
+              this.cleanupExpiredCache();
             }
             
             resolve(data);
@@ -73,8 +85,27 @@ class FreeApiService {
           }
         },
         fail: (error) => {
-          console.error('API请求失败:', error);
-          reject(error);
+          console.error('API请求失败:', {
+            url: url,
+            options: options,
+            error: error.errMsg || error.message,
+            statusCode: error.statusCode
+          });
+          
+          // 根据错误类型提供更具体的错误信息
+          let errorMessage = '网络请求失败';
+          
+          if (error.errMsg) {
+            if (error.errMsg.includes('timeout')) {
+              errorMessage = '请求超时，请检查网络连接';
+            } else if (error.errMsg.includes('fail')) {
+              errorMessage = '网络连接失败，请检查网络设置';
+            } else if (error.errMsg.includes('abort')) {
+              errorMessage = '请求被中断';
+            }
+          }
+          
+          reject(new Error(errorMessage));
         }
       });
     });
@@ -227,18 +258,15 @@ class FreeApiService {
     }
   }
 
-  // 保存衣物（带数据验证）
+  // 保存衣物（带完整数据验证）
   async saveClothing(clothingData) {
     showLoading('保存中...');
     
     try {
-      // 数据验证
-      if (!clothingData.name || !clothingData.name.trim()) {
-        throw new Error('衣物名称不能为空');
-      }
-      
-      if (!clothingData.category) {
-        throw new Error('请选择衣物分类');
+      // 完整数据验证
+      const validationResult = this.validateClothingData(clothingData);
+      if (!validationResult.valid) {
+        throw new Error(validationResult.error);
       }
 
       const result = await this.request('/clothing', {
@@ -492,19 +520,92 @@ class FreeApiService {
     };
   }
 
-  // 清除缓存
+  // 智能缓存TTL策略
+  getCacheTTL(url, options) {
+    // 根据URL类型和请求参数确定缓存时间
+    if (url.includes('/recommend')) {
+      return 600000; // 推荐数据10分钟
+    } else if (url.includes('/clothing') && options.method === 'GET') {
+      return 300000; // 衣物列表5分钟
+    } else if (url.includes('/outfits') && options.method === 'GET') {
+      return 300000; // 搭配列表5分钟
+    } else if (url.includes('/search')) {
+      return 180000; // 搜索结果3分钟
+    } else if (url.includes('/health')) {
+      return 60000; // 健康检查1分钟
+    } else {
+      return 120000; // 默认2分钟
+    }
+  }
+
+  // 清理过期缓存
+  cleanupExpiredCache() {
+    const now = Date.now();
+    const toDelete = [];
+    
+    for (const [key, value] of this.cache.entries()) {
+      const cacheTTL = this.getCacheTTL(value.url, value.options);
+      if (now - value.timestamp > cacheTTL) {
+        toDelete.push(key);
+      }
+    }
+    
+    toDelete.forEach(key => this.cache.delete(key));
+    
+    if (toDelete.length > 0) {
+      console.log(`清理了${toDelete.length}个过期缓存项`);
+    }
+  }
+
+  // 清除缓存（增强版）
   clearCache(pattern = null) {
     if (pattern) {
       // 清除匹配模式的缓存
+      const toDelete = [];
       for (const key of this.cache.keys()) {
         if (key.includes(pattern)) {
-          this.cache.delete(key);
+          toDelete.push(key);
         }
       }
+      toDelete.forEach(key => this.cache.delete(key));
+      console.log(`清除了${toDelete.length}个匹配"${pattern}"的缓存项`);
     } else {
-      // 清除所有缓存
+      const size = this.cache.size;
       this.cache.clear();
+      console.log(`清除了所有缓存（共${size}项）`);
     }
+  }
+
+  // 获取缓存统计
+  getCacheStats() {
+    const now = Date.now();
+    let validCount = 0;
+    let expiredCount = 0;
+    
+    for (const [key, value] of this.cache.entries()) {
+      const cacheTTL = this.getCacheTTL(value.url, value.options);
+      if (now - value.timestamp > cacheTTL) {
+        expiredCount++;
+      } else {
+        validCount++;
+      }
+    }
+    
+    return {
+      total: this.cache.size,
+      valid: validCount,
+      expired: expiredCount,
+      memoryUsage: this.estimateMemoryUsage()
+    };
+  }
+
+  // 估算缓存内存使用（KB）
+  estimateMemoryUsage() {
+    let totalSize = 0;
+    for (const [key, value] of this.cache.entries()) {
+      totalSize += JSON.stringify(value).length;
+    }
+    return Math.round(totalSize / 1024);
   }
 
   // 获取默认推荐（离线模式）
@@ -568,15 +669,141 @@ class FreeApiService {
     };
   }
 
+  // 衣物数据验证
+  validateClothingData(data) {
+    if (!data) {
+      return { valid: false, error: '数据不能为空' };
+    }
+    
+    if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+      return { valid: false, error: '衣物名称不能为空且必须是字符串' };
+    }
+    
+    if (data.name.trim().length > 50) {
+      return { valid: false, error: '衣物名称不能超过50个字符' };
+    }
+    
+    if (!data.category || typeof data.category !== 'string') {
+      return { valid: false, error: '请选择衣物分类' };
+    }
+    
+    const validCategories = ['top', 'bottom', 'dress', 'outerwear', 'shoes', 'accessory'];
+    if (!validCategories.includes(data.category)) {
+      return { valid: false, error: `无效的分类，支持的分类: ${validCategories.join(', ')}` };
+    }
+    
+    if (data.tags && (!Array.isArray(data.tags) || data.tags.some(tag => typeof tag !== 'string'))) {
+      return { valid: false, error: '标签必须是字符串数组' };
+    }
+    
+    if (data.tags && data.tags.length > 10) {
+      return { valid: false, error: '标签数量不能超过10个' };
+    }
+    
+    if (data.tags) {
+      for (const tag of data.tags) {
+        if (tag.length > 20) {
+          return { valid: false, error: '标签长度不能超过20个字符' };
+        }
+      }
+    }
+    
+    return { valid: true };
+  }
+
+  // 搭配数据验证
+  validateOutfitData(data) {
+    if (!data) {
+      return { valid: false, error: '数据不能为空' };
+    }
+    
+    if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+      return { valid: false, error: '搭配名称不能为空且必须是字符串' };
+    }
+    
+    if (data.name.trim().length > 50) {
+      return { valid: false, error: '搭配名称不能超过50个字符' };
+    }
+    
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+      return { valid: false, error: '搭配必须包含至少一件衣物' };
+    }
+    
+    if (data.items.length > 10) {
+      return { valid: false, error: '搭配中的衣物数量不能超过10件' };
+    }
+    
+    if (data.description && data.description.length > 200) {
+      return { valid: false, error: '搭配描述不能超过200个字符' };
+    }
+    
+    if (data.tags && (!Array.isArray(data.tags) || data.tags.some(tag => typeof tag !== 'string'))) {
+      return { valid: false, error: '标签必须是字符串数组' };
+    }
+    
+    const validSeasons = ['spring', 'summer', 'autumn', 'winter', 'all'];
+    if (data.season && !validSeasons.includes(data.season)) {
+      return { valid: false, error: `无效的季节，支持的季节: ${validSeasons.join(', ')}` };
+    }
+    
+    return { valid: true };
+  }
+
   // 提取标签
   extractTags(items) {
     const tagSet = new Set();
     items.forEach(item => {
-      if (item.tags) {
-        item.tags.forEach(tag => tagSet.add(tag));
+      if (item.tags && Array.isArray(item.tags)) {
+        item.tags.forEach(tag => {
+          if (typeof tag === 'string' && tag.trim().length > 0) {
+            tagSet.add(tag.trim());
+          }
+        });
       }
     });
     return Array.from(tagSet);
+  }
+
+  // 错误分类和处理
+  categorizeError(error) {
+    if (!error) return 'unknown';
+    
+    const message = error.message || error.toString();
+    
+    if (message.includes('timeout')) return 'timeout';
+    if (message.includes('network') || message.includes('fail')) return 'network';
+    if (message.includes('CORS')) return 'cors';
+    if (message.includes('limit') || message.includes('容量')) return 'quota';
+    if (message.includes('验证') || message.includes('无效')) return 'validation';
+    if (message.includes('权限') || message.includes('认证')) return 'authorization';
+    if (message.includes('数据库') || message.includes('database')) return 'database';
+    
+    return 'unknown';
+  }
+
+  // 获取用户友好的错误消息
+  getErrorMessage(error) {
+    const category = this.categorizeError(error);
+    const message = error.message || error.toString();
+    
+    switch (category) {
+      case 'timeout':
+        return '请求超时，请检查网络连接后重试';
+      case 'network':
+        return '网络连接失败，请检查网络设置';
+      case 'cors':
+        return '请求被安全策略阻止，请稍后重试';
+      case 'quota':
+        return '免费额度已用完，请稍后再试或升级服务';
+      case 'validation':
+        return message;
+      case 'authorization':
+        return '权限不足，请重新登录';
+      case 'database':
+        return '服务暂时不可用，请稍后重试';
+      default:
+        return '操作失败，请重试';
+    }
   }
 }
 
