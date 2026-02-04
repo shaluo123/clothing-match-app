@@ -24,8 +24,8 @@ const upload = multer({
 });
 
 // Supabase Storage客户端
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
 // 上传到Supabase Storage
@@ -242,7 +242,7 @@ async function createBackgroundRemovalMask(imageBuffer) {
     const { data, info } = await sharp(imageBuffer)
       .resize(256, 256, { fit: 'fill' })
       .raw()
-      .toBuffer({ resolveWithObject: });
+      .toBuffer({ resolveWithObject: true});
 
     const maskBuffer = Buffer.alloc(info.width * info.height * 4);
     

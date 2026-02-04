@@ -2,8 +2,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase配置
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // 创建Supabase客户端
 const supabase = createClient(supabaseUrl, supabaseKey, {

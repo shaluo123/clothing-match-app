@@ -113,3 +113,7 @@ temp/
 # 小程序特定
 # ------------------------------------------
 sitemap.json  # 如果需要版本控制可以删除此行
+api/package-lock.json
+project.config.json
+package-lock.json
+
