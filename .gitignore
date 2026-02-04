@@ -117,3 +117,5 @@ api/package-lock.json
 project.config.json
 package-lock.json
 
+
+.vercel

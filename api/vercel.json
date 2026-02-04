@@ -2,11 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "routes/*.js", 
-      "use": "@vercel/node" 
-    },
-    {
-      "src": "index.js",
+      "src": "routes/*.js",
       "use": "@vercel/node"
     }
   ],
@@ -17,13 +13,8 @@
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-        "Cache-Control": "public, max-age=300"
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With"
       }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.js"
     }
   ]
 }
