@@ -2,6 +2,10 @@
   "version": 2,
   "builds": [
     {
+      "src": "routes/*.js", 
+      "use": "@vercel/node" 
+    },
+    {
       "src": "index.js",
       "use": "@vercel/node"
     }
@@ -9,7 +13,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/index.js",
+      "dest": "/routes/$1.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
