@@ -1,5 +1,7 @@
 // 搜索功能路由 - Supabase版本
 const express = require('express');
+const wrapServerless = require('../utils/serverless-wrapper');
+
 const router = express.Router();
 const { 
   supabase, 
@@ -536,3 +538,4 @@ router.get('/popular', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.handler = wrapServerless(router, '/api/search');

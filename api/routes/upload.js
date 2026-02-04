@@ -1,5 +1,7 @@
 // 文件上传和AI处理路由 - Supabase Storage版本
 const express = require('express');
+const wrapServerless = require('../utils/serverless-wrapper');
+
 const router = express.Router();
 const multer = require('multer');
 const sharp = require('sharp');
@@ -494,5 +496,7 @@ router.get('/stats', async (req, res) => {
     });
   }
 });
+
+module.exports.handler = wrapServerless(router, '/api/upload');
 
 module.exports = router;
