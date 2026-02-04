@@ -49,16 +49,26 @@ const config = {
   
   // 获取当前配置
   getCurrentConfig() {
+    const baseConfig = this.SUPABASE_SERVICES.project;
+    
+    // 为不同模式添加相应的baseURL
     switch (this.DEPLOY_MODE) {
       case 'supabase':
-        return this.SUPABASE_SERVICES.project;
+        return {
+          ...baseConfig,
+          baseURL: baseConfig.url // 直接使用Supabase URL
+        };
       case 'vercel-supabase':
         return {
-          ...this.SUPABASE_SERVICES.project,
+          ...baseConfig,
+          baseURL: process.env.VERCEL_API_URL || 'https://your-project.vercel.app', // Vercel API地址
           mode: 'vercel-supabase'
         };
       default:
-        return this.SUPABASE_SERVICES.project;
+        return {
+          ...baseConfig,
+          baseURL: baseConfig.url
+        };
     }
   },
   
